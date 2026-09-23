@@ -1,0 +1,38 @@
+# ============================================================
+#  工e航鉴 · Git 忽略清单
+#  目的：仓库只放"代码 + 演示快照 + 结果图"，
+#        数据、环境、内部文档、参赛作品本体一律不进版本库。
+# ============================================================
+
+# ---- 数据集（19 GB，用 src/setup_data.py 自动下载）----
+data/
+*.zip
+*.tar.gz
+*.tgz
+
+# ---- 虚拟环境 ----
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# ---- 内部文档 / 参赛作品（全部不对外）----
+# docs/ 里是团队工作文档（核验记录、竞品分析、答辩 FAQ…）
+# 以及参赛作品本体（计划书 docx / pdf）—— 比赛期间一律不进公开仓库。
+# 日后想公开某一份，用 `git add -f docs/xxx.md` 单独放行即可。
+docs/
+
+# ---- 大中间产物（跑一次 run_all.py 就能重新生成）----
+experiments/results/cooccurrence_edges_*.csv
+experiments/results/edges_with_class_baseline_*.csv
+experiments/results/anomaly_scores.csv
+
+# ---- AI 工具配置（不是项目代码）----
+.claude/
+
+# ---- 运行期临时 ----
+logs/
+*.log
+.DS_Store
+Thumbs.db

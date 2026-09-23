@@ -1,0 +1,2 @@
+﻿incident_num,mmsi_a,mmsi_b,incident_type,evidence,detected,n_windows
+1,367137680,367514890,Irregular tow,High evidence,True,238
