@@ -1,4 +1,152 @@
-# 工e航鉴
+# Gong-e Hang-jian (工e航鉴)
+
+**Trade Background Verification for International Settlements Using Vessel Physical Co-occurrence Networks**
+
+> Entry for the 17th "ICBC Cup" National College Student FinTech Innovation Competition
+> Dalian Maritime University · Houbo Yang, Feiyang Pan · Advisor: Zijian Li
+> Track: Financial Security Services
+
+*[中文说明见下方 ↓](#中文说明)*
+
+---
+
+## What This Is
+
+When settling international trade, banks must verify that the **shipping background behind a transaction is genuine**. Today's practice relies on documents self-reported by the trading parties — bills of lading, invoices, contracts — and checks only their formal consistency ("three flows": funds, goods, documents). Regulators have explicitly stated this framework **lacks an executable, traceable, cross-verifiable standard for determining authenticity**.
+
+This project uses **real physical movement data from vessel AIS** as an independent evidence source. It builds a heterogeneous "company–vessel–port" graph, identifies **physical co-occurrence patterns of circular trading between related parties**, and converts them into structured decision variables that can be embedded directly into a bank's approval model.
+
+**In one line**: we do not compete with data vendors — we sit downstream of them. We don't produce data; we change how data is used.
+
+---
+
+## 🚀 Quick Start
+
+### Step 1 — Run the demo (zero downloads, ~10 seconds)
+
+```bash
+pip install -r requirements.txt
+python -m streamlit run app/streamlit_app.py
+```
+
+**The data the demo needs (1.8 MB) is committed to this repository — nothing to download.**
+
+In the browser you will see the declaration-verification flow, the co-occurrence network, and actual AIS tracks. Switch documents in the left panel and compare `D000` (normal) against `D000F0` (injected fraud) — that contrast is the clearest.
+
+### Step 2 — Reproduce all experiments
+
+```bash
+python run_all.py
+```
+
+> ⚠️ Full reproduction requires a **16 GB dataset**. If it is missing, `src/setup_data.py` will **download it automatically** (resumable, with MD5 verification). **You do not need this step to view the demo.**
+
+---
+
+## 📁 Repository Layout
+
+```
+hangzhengbao/
+├── app/streamlit_app.py      ← demo UI (entry point)
+├── run_all.py                ← one-command full pipeline (entry point)
+├── START_DEMO.bat            ← double-click launcher for Windows
+│
+├── demo_data/                ← ★ demo snapshot (1.8 MB, committed)
+│   ├── README.txt                what this is and where it came from
+│   ├── rule_engine_results.csv   verification results for 22 declarations
+│   ├── cooccurrence_edges.csv    vessel co-occurrence network
+│   ├── vessel_features.csv       voyage feature table
+│   └── tracks.csv                AIS tracks for the demo vessels
+│
+├── src/                      ← 11 functional modules
+│   ├── setup_data.py             download / verify / extract data
+│   ├── data_loader.py            loading and field validation
+│   ├── eda.py                    exploratory analysis and plots
+│   ├── feature_engineering.py    AIS base feature engineering
+│   ├── network_analysis.py    ★  co-occurrence network construction (core anchor)
+│   ├── network_viz.py            network visualisation
+│   ├── rule_engine.py            declaration verification rule engine
+│   ├── anomaly_model.py          anomaly detection (ablation control)
+│   ├── vertical_fl_sim.py        vertical federated learning simulation
+│   ├── multimodal_fusion.py      multimodal evidence fusion
+│   └── make_snapshot.py          build the demo snapshot
+│
+├── experiments/              ← 3 experiment scripts + results/
+└── requirements.txt          ← dependencies, all versions pinned
+```
+
+---
+
+## 🔬 Core Method: Physical Co-occurrence Networks
+
+Every AIS point is binned by (time window × spatial cell); vessels appearing in the same cell form a pairwise co-occurrence edge.
+
+**Key methodological finding (counter-intuitive, but reproducible):**
+
+> **The stronger the co-occurrence, the more likely it reflects routine operations — not anomalies.**
+>
+> Permanent, high-intensity co-occurrence (present in 12/12 months, thousands of windows) = **infrastructure-like relationships** (harbour tugs, sightseeing ferries).
+> **Event-driven, medium-intensity co-occurrence is what carries signal.**
+
+On that basis we introduce a **within-vessel-type z-score**. Baseline co-occurrence intensity differs enormously between vessel-type pairs (median 0 between fishing vessels, 8 between tugs) — without normalisation, tugs occupy the top of the ranking permanently.
+
+---
+
+## 📊 Data Source
+
+| Item | Detail |
+|---|---|
+| **Dataset** | **HawaiiCoast_GT** |
+| Publisher | **Sandia National Laboratories** (US Department of Energy / NNSA) |
+| Location | Zenodo DOI `10.5281/zenodo.8253611` |
+| Licence | **CC BY 4.0** (free to use and redistribute with attribution) |
+| Scale | 3.0 GB compressed / 16 GB extracted; **88,749,176 AIS points / 2,622 vessels / 208 labelled tracks / 154 real incidents** |
+| Period & region | 2017–2020, coastal Hawaii |
+| Upstream source | MarineCadastre (NOAA / BOEM) |
+
+**The dataset is not committed to this repository** (16 GB). Running `python src/setup_data.py` downloads and MD5-verifies it automatically.
+
+### Why not Chinese data?
+
+We checked candidate sources one by one:
+
+- **China MSA AIS platform (`ais.msa.gov.cn`)**: verified by direct access — requires login, **supports single-vessel queries only, offers no bulk data interface**, and scraping carries clear compliance risk.
+- **The more important finding**: no AIS dataset was found that is simultaneously **free, clearly licensed, directly downloadable, and covers Chinese coastal waters**.
+
+**The project therefore takes the compliant path deliberately**: algorithm validation is performed on an openly licensed international benchmark. That dataset is honestly described as *"an open international benchmark for algorithm validation"* — **we do not imply it is Chinese data**.
+
+---
+
+## 🔌 Portability
+
+**All paths are relative** (resolved from each script's own location to the project root), so the project runs **from any directory**, with no dependency on a specific drive letter or working directory.
+
+The **16 GB dataset is not committed** — the demo data is extracted into a 1.8 MB snapshot, and scripts download the full set when needed.
+
+---
+
+## ⚙️ Environment
+
+- Python 3.11+
+- Dependencies: see `requirements.txt` (**all versions pinned**)
+- Install: `pip install -r requirements.txt`
+
+---
+
+## ⚠️ A Deliberate Honesty Statement
+
+The report **proactively discloses six limitations**. The most important one:
+
+> The ground truth used for validation consists of **maritime safety incidents** (towing, rescue, collision) — **not trade-fraud incidents**.
+> The headline number (top-50 lift 369×) shows that *"the co-occurrence network method can surface anomalous vessel interaction"*.
+> It does **not** directly establish *"it can identify circular-trade fraud"* — the bridge between the two (the multimodal fusion layer) is not yet fully built.
+
+This is the largest evidence gap in the current approach. We state it plainly rather than downplaying it.
+
+---
+---
+
+# 中文说明
 
 **基于船舶物理共现网络的国际结算贸易背景核验系统**
 
@@ -138,6 +286,7 @@ hangzhengbao/
 - 安装：`pip install -r requirements.txt`
 
 ---
+
 ## ⚠️ 一个主动的诚实声明
 
 本项目在报告中**主动披露了六条局限**，其中最关键的一条：
